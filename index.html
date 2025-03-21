@@ -236,21 +236,22 @@
     function checkCollisions() {
       // Check bullet collisions with asteroids
       for (let a = asteroids.length - 1; a >= 0; a--) {
-        for (let b = bullets.length - 1; b >= 0; b--) {
-          if (asteroids[a].collideWith(bullets[b])) {
-            score += Math.floor(asteroids[a].size);
-            // Split asteroid if it's large enough
-            if (asteroids[a].size > 20) {
-              const newSize = asteroids[a].size * 0.6;
-              asteroids.push(new Asteroid(asteroids[a].x, asteroids[a].y, newSize));
-              asteroids.push(new Asteroid(asteroids[a].x, asteroids[a].y, newSize));
-            }
-            asteroids.splice(a, 1);
-            bullets.splice(b, 1);
-            break;
+      for (let b = bullets.length - 1; b >= 0; b--) {
+        if (asteroids[a].collideWith(bullets[b])) {
+          score += Math.floor(asteroids[a].size);
+          // Reduce asteroid size instead of splitting
+          if (asteroids[a].size > 60) {
+            asteroids[a].size *= 0.6; // Reduce size
+            asteroids[a].radius = asteroids[a].size / 2; // Update radius
+          } else {
+            asteroids.splice(a, 1); // Remove asteroid if too small
           }
+          bullets.splice(b, 1);
+          break;
         }
       }
+    }
+
       // Check ship collisions with asteroids
       for (let a = 0; a < asteroids.length; a++) {
         if (asteroids[a].collideWith(ship)) {
