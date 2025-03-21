@@ -20,7 +20,7 @@
 
         #score {
             position: absolute;
-            top: 10px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 24px;
@@ -45,13 +45,80 @@
         #resetButton:hover {
             background-color: rgb(102, 102, 102);
         }
+
+        #upgradeMenu {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        #upgradeMenu button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease; /* smooth transition over 0.3 seconds */
+        }
+
+        #earningupgrade, #speedupgrade, #gun {
+            background-color: transparent;
+            border-width: 3px;
+            border-radius: 5px;
+            border-color: white;
+            color: white;
+            transition: background-color 0.3s ease; /* smooth transition over 0.3 seconds */
+        }
+
+        #earningupgrade:hover, #speedupgrade:hover, #gun:hover {
+            background-color: rgb(53, 53, 53);
+        }
+        
+        #earningupgrade:focus, #speedupgrade:focus, #earningupgrade:active, #speedupgrade:active, #gun:active {
+            outline: none; /* Remove outline when clicked */
+            box-shadow: none; /* Remove box-shadow when clicked */
+            background-color: transparent; /* Ensure background remains transparent */
+            color: white; /* Ensure color remains white */
+            border-color: white; /* Ensure border remains white */
+        }
+
+        button:active {
+          border-style: outset;
+        }
+
+        #cooldownBarContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background-color: transparent;
+        }
+
+        #cooldownBar {
+            height: 100%;
+            background-color: rgb(255, 255, 255);
+            width: 100%;
+        }
     </style>
 </head>
 <body>
+<div id="cooldownBarContainer">
+    <div id="cooldownBar"></div>
+</div> 
 <div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
+<div id="upgradeMenu">
+    <button id="earningupgrade" onclick="upgradeEarnings()">Upgrade Earnings ($50)</button>
+    <button id="speedupgrade" onclick="upgradeSpeed()">Upgrade Speed ($100)</button>
+    <button id="gun" onclick="upgradeGun()">Upgrade gun ($200)</button>
+</div>
 <button id="resetButton" onclick="resetGame()">Restart Game</button>
 <script>
+    document.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => btn.blur());
+    });
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const scoreDisplay = document.getElementById("score");
@@ -74,22 +141,22 @@
         velocity: {x: 0, y: 0},
         radius: 15,
         turningSpeed: 0.06,
-        acceleration: 0.2,
+        acceleration: 0.01,
         friction: 0.99,
         thrusting: false
     };
 
+    var asteroidspeedMultiplier = 1;
     let asteroids = [];
     let bullets = [];
     let keys = {left: false, right: false, up: false, space: false};
     let score = 0;
     let lastShotTime = 0;
-    const bulletCooldown = 250; // milliseconds
-    const maxBulletDistance = 800; // Remove bullet if far from its start
+    const maxBulletDistance = 5000; // Remove bullet if far from its start
     let gameOver = false;
     const initialAsteroidCount = 10; // How many asteroids to start with
     const asteroidRespawnRate = 2; // Number of asteroids to spawn when needed
-    const minAsteroidCount = 3; // Minimum number of asteroids to maintain
+    const minAsteroidCount = 10; // Minimum number of asteroids to maintain
 
     // Handle key events
     window.addEventListener("keydown", (e) => {
@@ -175,7 +242,7 @@
             this.y = y;
             this.size = size;
             this.radius = size / 2;
-            this.speed = Math.random() * 1.5 + 0.5;
+            this.speed = Math.random() * 0.5 * asteroidspeedMultiplier;
             this.angle = Math.random() * Math.PI * 2;
             this.rotation = 0; // Initial rotation
             this.spin = (Math.random() - 0.5) * 0.01; // Random spin speed
@@ -298,6 +365,8 @@
                 const bullet = bullets[b];
                 if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
                     score += Math.floor(asteroid.size);
+                    money += Math.floor((Math.random() * 5) + 1 * earningsMultiplier);
+                    console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
                     // Reduce asteroid size instead of splitting
                     if (asteroid.size > 60) {
                         asteroid.size *= 0.6;
@@ -321,7 +390,7 @@
                 break;
             }
         }
-        scoreDisplay.textContent = `Score: ${score}`;
+        scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
     }
 
     // Draw the ship (same as before)
@@ -397,6 +466,7 @@
         checkCollisions();
         drawShip();
         respawnAsteroids();
+        updateCooldownBar();  // This will update the cooldown progress bar
         if (gameOver) {
             drawGameOver();
         } else {
@@ -408,6 +478,75 @@
     for (let i = 0; i < initialAsteroidCount; i++) {
         spawnAsteroid();
     }
+
+    var upgradeEarningscost = 50;
+    var upgradeSpeedcost = 100;
+    let money = 0;
+    let earningsMultiplier = 1;
+    let shipSpeedMultiplier = 1;
+    let upgradeGuncost = 200;
+    var bulletCooldown = 1000; // milliseconds
+
+    function upgradeEarnings() {
+        if (money >= upgradeEarningscost) {
+            money -= upgradeEarningscost;
+            earningsMultiplier += 0.1;
+            console.log(`Earnings upgraded! New Multiplier: ${earningsMultiplier}`);
+            scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+            upgradeEarningscost = Math.floor(upgradeEarningscost * 1.5);
+            earningupgrade.textContent = `Upgrade Earnings ($${upgradeEarningscost})`;
+        }
+    }
+
+    function updateCooldownBar() {
+    const now = Date.now();
+    const elapsedTime = now - lastShotTime; // Time passed since last shot
+    const cooldownPercentage = (elapsedTime / bulletCooldown) * 100; // Percentage of cooldown elapsed
+
+    // Update the bar width based on the percentage
+    document.getElementById("cooldownBar").style.width = `${Math.min(cooldownPercentage, 100)}%`;
+
+    // Once the cooldown is finished, the bar should stay at 100%
+    if (elapsedTime >= bulletCooldown) {
+        // Optionally reset lastShotTime here if you want to allow shooting again
+        // lastShotTime = now;
+    }
+}
+
+
+
+    function upgradeSpeed() {
+        if (money >= upgradeSpeedcost) {
+            money -= upgradeSpeedcost;
+            ship.acceleration += 0.01;
+            shipSpeedMultiplier += 0.01;
+            console.log(`Speed upgraded! New Acceleration: ${ship.acceleration}, Speed Multiplier: ${shipSpeedMultiplier}`);
+            scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+            upgradeSpeedcost = Math.floor(upgradeSpeedcost * 1.5);
+            speedupgrade.textContent = `Upgrade Speed ($${upgradeSpeedcost})`;
+        }
+    }
+
+    function upgradeGun() {
+        if (money >= upgradeGuncost) {
+            money -= upgradeGuncost;
+            bulletCooldown -= 10;
+            console.log(`Gun upgraded! New timing: ${bulletCooldown}ms`);
+            scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+            upgradeGuncost = Math.floor(upgradeGuncost * 1.5);
+            gun.textContent = `Upgrade gun ($${upgradeGuncost})`;
+        }
+    }
+
+        
+    function increaseasteroidSpeed() {
+    asteroidspeedMultiplier += 0.01;
+    minAsteroidCount += 1;
+    console.log(`Asteroid Speed Multiplier: ${asteroidspeedMultiplier}, Min Asteroid Count: ${minAsteroidCount}`);
+    }
+
+    // Set an interval to call the increaseSpeed function every 10 seconds (10000 milliseconds)
+    setInterval(increaseasteroidSpeed, 60000);
 
     update();
 </script>
