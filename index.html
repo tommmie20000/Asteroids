@@ -164,12 +164,21 @@
         if (e.key === "ArrowRight") keys.right = true;
         if (e.key === "ArrowUp") keys.up = true;
         if (e.key === " ") keys.space = true;
+        if (e.key === "r" && gameOver) resetGame();
+        if (e.key === "w") keys.up = true;
+        if (e.key === "a") keys.left = true;
+        if(e.key === "s") keys.down = true;
+        if (e.key === "d") keys.right = true;
     });
     window.addEventListener("keyup", (e) => {
         if (e.key === "ArrowLeft") keys.left = false;
         if (e.key === "ArrowRight") keys.right = false;
         if (e.key === "ArrowUp") keys.up = false;
         if (e.key === " ") keys.space = false;
+        if (e.key === "w") keys.up = false;
+        if (e.key === "a") keys.left = false;
+        if(e.key === "s") keys.down = false;
+        if (e.key === "d") keys.right = false;
     });
 
     // Ship movement
