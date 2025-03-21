@@ -48,7 +48,7 @@
 
         #upgradeMenu {
             position: absolute;
-            bottom: 20px;
+            bottom: 5%;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -140,7 +140,7 @@
         angle: -Math.PI / 2,
         velocity: {x: 0, y: 0},
         radius: 15,
-        turningSpeed: 0.06,
+        turningSpeed: 0.04,
         acceleration: 0.01,
         friction: 0.99,
         thrusting: false
@@ -435,6 +435,13 @@
         score = 0;
         asteroids = [];
         bullets = [];
+        money = 0;
+        upgradeEarningscost = 50;
+        upgradeSpeedcost = 100;
+        earningsMultiplier = 1;
+        shipSpeedMultiplier = 1;
+        upgradeGuncost = 200;
+        bulletCooldown = 1000; // milliseconds
         ship.x = canvas.width / 2;
         ship.y = canvas.height / 2;
         ship.velocity = {x: 0, y: 0};
