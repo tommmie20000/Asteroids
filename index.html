@@ -156,7 +156,7 @@
     let gameOver = false;
     const initialAsteroidCount = 10; // How many asteroids to start with
     const asteroidRespawnRate = 2; // Number of asteroids to spawn when needed
-    const minAsteroidCount = 10; // Minimum number of asteroids to maintain
+    var minAsteroidCount = 10; // Minimum number of asteroids to maintain
 
     // Handle key events
     window.addEventListener("keydown", (e) => {
@@ -365,7 +365,7 @@
                 const bullet = bullets[b];
                 if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
                     score += Math.floor(asteroid.size);
-                    money += Math.floor((Math.random() * 5) + 1 * earningsMultiplier);
+                    money += Math.floor((Math.random() * 15) + 1 * earningsMultiplier);
                     console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
                     // Reduce asteroid size instead of splitting
                     if (asteroid.size > 60) {
@@ -442,6 +442,8 @@
         shipSpeedMultiplier = 1;
         upgradeGuncost = 200;
         bulletCooldown = 1000; // milliseconds
+        minAsteroidCount = 10;
+        asteroidspeedMultiplier = 1;
         ship.x = canvas.width / 2;
         ship.y = canvas.height / 2;
         ship.velocity = {x: 0, y: 0};
@@ -486,25 +488,6 @@
         spawnAsteroid();
     }
 
-    var upgradeEarningscost = 50;
-    var upgradeSpeedcost = 100;
-    let money = 0;
-    let earningsMultiplier = 1;
-    let shipSpeedMultiplier = 1;
-    let upgradeGuncost = 200;
-    var bulletCooldown = 1000; // milliseconds
-
-    function upgradeEarnings() {
-        if (money >= upgradeEarningscost) {
-            money -= upgradeEarningscost;
-            earningsMultiplier += 0.1;
-            console.log(`Earnings upgraded! New Multiplier: ${earningsMultiplier}`);
-            scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
-            upgradeEarningscost = Math.floor(upgradeEarningscost * 1.5);
-            earningupgrade.textContent = `Upgrade Earnings ($${upgradeEarningscost})`;
-        }
-    }
-
     function updateCooldownBar() {
     const now = Date.now();
     const elapsedTime = now - lastShotTime; // Time passed since last shot
@@ -520,7 +503,42 @@
     }
 }
 
+    var upgradeEarningscost = 50;
+    var upgradeSpeedcost = 100;
+    let money = 0;
+    let earningsMultiplier = 1;
+    let shipSpeedMultiplier = 1;
+    let upgradeGuncost = 200;
+    var bulletCooldown = 1000; // milliseconds
 
+    let earningupgrade = document.getElementById('earningupgrade');
+
+    function upgradeEarnings() {
+        if (money >= upgradeEarningscost) {
+            money -= upgradeEarningscost;
+            earningsMultiplier += 0.1;
+            console.log(`Earnings upgraded! New Multiplier: ${earningsMultiplier}`);
+            scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+            upgradeEarningscost = Math.floor(upgradeEarningscost * 1.5);
+            earningupgrade.textContent = `Upgrade Earnings ($${upgradeEarningscost})`;
+        }
+        if (money < upgradeEarningscost) {
+            earningupgrade.textContent = `Not enough money! ($${upgradeEarningscost})`;
+            console.log("not enough money");
+            earningupgrade.style.border = '2px solid red';
+            setInterval(() => {
+                earningupgrade.textContent = `Upgrade Earnings ($${upgradeEarningscost})`;
+                earningupgrade.style.border = '2px solid white';
+            }, 2000);
+        }
+        if (earningsMultiplier >= 2) {
+            earningupgrade.textContent = `Max level reached!`;
+            console.log("Earnings already at max upgrade");
+            earningupgrade.style.border = '2px solid gray';
+        }
+    }
+
+    let speedelement = document.getElementById('speedupgrade');
 
     function upgradeSpeed() {
         if (money >= upgradeSpeedcost) {
@@ -532,28 +550,58 @@
             upgradeSpeedcost = Math.floor(upgradeSpeedcost * 1.5);
             speedupgrade.textContent = `Upgrade Speed ($${upgradeSpeedcost})`;
         }
+        if (money < upgradeSpeedcost) {
+            speedupgrade.textContent = `Not enough money! ($${upgradeSpeedcost})`;
+            console.log("not enough money");
+            speedelement.style.border = '2px solid red';
+            setInterval(() => {
+                speedupgrade.textContent = `Upgrade Speed ($${upgradeSpeedcost})`;
+                speedelement.style.border = '2px solid white';
+            }, 2000);
+        }
+        if (ship.acceleration >= 0.1) {
+            speedupgrade.textContent = `Max level reached!`;
+            console.log("Speed already at max upgrade");
+            speedelement.style.border = '2px solid gray';
+        }
     }
 
+    let gunelement = document.getElementById('gun');
+
     function upgradeGun() {
-        if (money >= upgradeGuncost) {
+        if (money >= upgradeGuncost && bulletCooldown > 100) {
             money -= upgradeGuncost;
-            bulletCooldown -= 10;
+            bulletCooldown -= 100;
             console.log(`Gun upgraded! New timing: ${bulletCooldown}ms`);
             scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
             upgradeGuncost = Math.floor(upgradeGuncost * 1.5);
             gun.textContent = `Upgrade gun ($${upgradeGuncost})`;
         }
+        if (bulletCooldown <= 100) {
+            gun.textContent = `Max level reached!`;
+            console.log("Gun already at max upgrade");
+            gunelement.style.border = '2px solid gray';
+        }
+        if (money < upgradeGuncost) {
+            gun.textContent = `Not enough money! ($${upgradeGuncost})`;
+            console.log("not enough money");
+            gunelement.style.border = '2px solid red';
+            setInterval(() => {
+                gun.textContent = `Upgrade gun ($${upgradeGuncost})`;
+                gunelement.style.border = '2px solid white';
+            }, 2000);
+        }
     }
 
         
-    function increaseasteroidSpeed() {
-    asteroidspeedMultiplier += 0.01;
+    function increaseSpeed() {
+    asteroidspeedMultiplier += 0.1;
     minAsteroidCount += 1;
     console.log(`Asteroid Speed Multiplier: ${asteroidspeedMultiplier}, Min Asteroid Count: ${minAsteroidCount}`);
     }
 
-    // Set an interval to call the increaseSpeed function every 10 seconds (10000 milliseconds)
-    setInterval(increaseasteroidSpeed, 60000);
+    // Set an interval to call the increaseSpeed function every 60 seconds (60000 milliseconds)
+    setInterval(increaseSpeed, 60000);
 
     update();
 </script>
