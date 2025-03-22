@@ -101,6 +101,16 @@
             background-color: rgb(255, 255, 255);
             width: 100%;
         }
+
+        #sliderContainer {
+            position: absolute;
+            top: 10px;
+            left: 5px;
+            z-index: 10;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
     </style>
 </head>
 <body>
@@ -108,11 +118,15 @@
     <div id="cooldownBar"></div>
 </div> 
 <div id="score">Score: 0</div>
+<div id="sliderContainer">
+    <label for="turningSpeedSlider">Turning Speed:</label>
+    <input type="range" id="turningSpeedSlider" min="0.005" max="0.1" step="0.005" value="0.02" tabindex="-1" style="outline: none;">
+</div>
 <canvas id="gameCanvas"></canvas>
 <div id="upgradeMenu">
     <button id="earningupgrade" onclick="upgradeEarnings()">Upgrade Earnings ($50)</button>
     <button id="speedupgrade" onclick="upgradeSpeed()">Upgrade Speed ($100)</button>
-    <button id="gun" onclick="upgradeGun()">Upgrade gun ($200)</button>
+    <button id="gun" onclick="upgradeGun()">Upgrade gun ($150)</button>
 </div>
 <button id="resetButton" onclick="resetGame()">Restart Game</button>
 <script>
@@ -134,7 +148,7 @@
     resizeCanvas();
 
     // Game settings and variables
-    const ship = {
+    let ship = {
         x: canvas.width / 2,
         y: canvas.height / 2,
         angle: -Math.PI / 2,
@@ -526,7 +540,7 @@
     let money = 0;
     let earningsMultiplier = 1;
     let shipSpeedMultiplier = 1;
-    let upgradeGuncost = 200;
+    let upgradeGuncost = 150;
     var bulletCooldown = 1000; // milliseconds
 
     let earningupgrade = document.getElementById('earningupgrade');
@@ -589,7 +603,7 @@
     function upgradeGun() {
         if (money >= upgradeGuncost && bulletCooldown > 100) {
             money -= upgradeGuncost;
-            bulletCooldown -= 100;
+            bulletCooldown -= 250;
             console.log(`Gun upgraded! New timing: ${bulletCooldown}ms`);
             scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
             upgradeGuncost = Math.floor(upgradeGuncost * 1.5);
@@ -620,6 +634,16 @@
 
     // Set an interval to call the increaseSpeed function every 60 seconds (60000 milliseconds)
     setInterval(increaseSpeed, 60000);
+
+    window.onload = function() {
+        document.getElementById("turningSpeedSlider").addEventListener("input", function() {
+            ship.turningSpeed = parseFloat(this.value);
+        });
+    };
+
+    document.getElementById("turningSpeedSlider").addEventListener("keydown", (event) => {
+        event.preventDefault();
+    });
 
     update();
 </script>
