@@ -177,6 +177,7 @@
     const initialAsteroidCount = 10; // How many asteroids to start with
     const asteroidRespawnRate = 2; // Number of asteroids to spawn when needed
     var minAsteroidCount = 10; // Minimum number of asteroids to maintain
+    let moneyDrops = []; // Array to store money drops
 
     // Handle key events
     window.addEventListener("keydown", (e) => {
@@ -275,16 +276,18 @@
 
     // Asteroid class with irregular polygon shapes
     class Asteroid {
-        constructor(x, y, size) {
+        constructor(x, y, size, isGolden = false) {
             this.x = x;
             this.y = y;
-            this.size = size;
-            this.radius = size / 2;
+            this.size = isGolden ? size * 2 : size; // Golden asteroids are twice as large
+            this.radius = this.size / 2;
             this.speed = Math.random() * 0.5 * asteroidspeedMultiplier;
             this.angle = Math.random() * Math.PI * 2;
             this.rotation = 0; // Initial rotation
             this.spin = (Math.random() - 0.5) * 0.01; // Random spin speed
             this.vertices = this.generateVertices();
+            this.isGolden = isGolden; // New property for golden asteroids
+            this.exploded = false; // Track if the asteroid has already exploded
         }
 
         // Generate random vertices for a more rock-like appearance
@@ -296,7 +299,7 @@
                 const distance = this.radius + (Math.random() * 10 - 5); // Variation in edge length
                 const x = Math.cos(angle) * distance;
                 const y = Math.sin(angle) * distance;
-                vertices.push({x, y});
+                vertices.push({ x, y });
             }
             return vertices;
         }
@@ -322,7 +325,7 @@
                 ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
             }
             ctx.closePath();
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = this.isGolden ? "gold" : "white"; // Golden color for golden asteroids
             ctx.lineWidth = 2;
             ctx.stroke();
             ctx.restore();
@@ -350,11 +353,36 @@
         return inside;
     }
 
+    class MoneyDrop {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.width = 20;
+            this.height = 10;
+            this.color = "green";
+            this.collected = false;
+        }
+
+        draw() {
+            if (!this.collected) {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        isCollected(ship) {
+            const dx = this.x + this.width / 2 - ship.x;
+            const dy = this.y + this.height / 2 - ship.y;
+            return Math.hypot(dx, dy) < ship.radius;
+        }
+    }
+
     // Spawn an asteroid at a random edge location
     function spawnAsteroid() {
         let edge = Math.floor(Math.random() * 4);
         let x, y;
         const size = Math.random() * 100 + 30; // Size range: 30 to 130
+        const isGolden = Math.random() < 0.1; // 10% chance to spawn a golden asteroid
         if (edge === 0) {
             x = 0;
             y = Math.random() * canvas.height;
@@ -368,7 +396,7 @@
             x = Math.random() * canvas.width;
             y = canvas.height;
         }
-        asteroids.push(new Asteroid(x, y, size));
+        asteroids.push(new Asteroid(x, y, size, isGolden));
     }
 
     // Asteroid respawn logic
@@ -391,21 +419,28 @@
 
    // Check collisions for bullets with asteroids and ship with asteroids
     function checkCollisions() {
-        // Check bullet collisions with asteroids (Point-in-Polygon)
-        for (let a = asteroids.length - 1; a >= 0; a--) {
-            const asteroid = asteroids[a];
-            const asteroidPolygon = asteroid.vertices.map(v => ({
-                x: asteroid.x + v.x,
-                y: asteroid.y + v.y
-            }));
+    for (let a = asteroids.length - 1; a >= 0; a--) {
+        const asteroid = asteroids[a];
+        const asteroidPolygon = asteroid.vertices.map(v => ({
+            x: asteroid.x + v.x,
+            y: asteroid.y + v.y
+        }));
 
-            for (let b = bullets.length - 1; b >= 0; b--) {
-                const bullet = bullets[b];
-                if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
-                    score += Math.floor(asteroid.size);
-                    money += Math.floor((Math.random() * 15) + 1 * earningsMultiplier * secret);
-                    console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
-                    // Reduce asteroid size instead of splitting
+        // Check collision between bullets and asteroids
+        for (let b = bullets.length - 1; b >= 0; b--) {
+            const bullet = bullets[b];
+            if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
+                score += Math.floor(asteroid.size);
+                money += Math.floor((Math.random() * 15) + 1 * earningsMultiplier * secret);
+                console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
+
+                if (asteroid.isGolden) {
+                    if (!asteroid.exploded) {
+                        moneyDrops.push(new MoneyDrop(asteroid.x, asteroid.y)); // Spawn money drop
+                        asteroid.exploded = true; // Mark as exploded
+                        asteroids.splice(a, 1); // Remove the golden asteroid
+                    }
+                } else {
                     if (asteroid.size > 60) {
                         asteroid.size *= 0.6;
                         asteroid.radius = asteroid.size / 2;
@@ -413,23 +448,32 @@
                     } else {
                         asteroids.splice(a, 1);
                     }
-                    bullets.splice(b, 1);
-                    break;
                 }
-            }
-        }
-
-        // Check ship collisions with asteroids (Approximating ship as a circle)
-        for (let a = 0; a < asteroids.length; a++) {
-            const dx = asteroids[a].x - ship.x;
-            const dy = asteroids[a].y - ship.y;
-            if (Math.hypot(dx, dy) < asteroids[a].radius + ship.radius) {
-                gameOver = true;
+                bullets.splice(b, 1);
                 break;
             }
         }
-        scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+
+        // Check collision between the ship and asteroids
+        if (isPointInPolygon(ship.x, ship.y, asteroidPolygon)) {
+            console.log("Ship collided with an asteroid!");
+            gameOver = true; // Trigger game over state
+            return; // Exit the function to stop further checks
+        }
     }
+
+    // Check if the ship collects money drops
+    for (let i = moneyDrops.length - 1; i >= 0; i--) {
+        const drop = moneyDrops[i];
+        if (drop.isCollected(ship)) {
+            money += Math.round(Math.random() * 100 + 100); // Add $200 to the player's money
+            console.log("Collected $200!");
+            moneyDrops.splice(i, 1); // Remove the collected drop
+        }
+    }
+
+    scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
+}
 
     // Draw the ship (same as before)
     function drawShip() {
@@ -497,6 +541,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         moveShip();
         if (keys.space) fireBullet();
+
         // Update and draw bullets
         for (let i = bullets.length - 1; i >= 0; i--) {
             bullets[i].move();
@@ -505,15 +550,20 @@
                 bullets.splice(i, 1);
             }
         }
+
         // Update and draw asteroids
         asteroids.forEach(asteroid => {
             asteroid.move();
             asteroid.draw();
         });
+
+        // Draw and update money drops
+        moneyDrops.forEach(drop => drop.draw());
+
         checkCollisions();
         drawShip();
         respawnAsteroids();
-        updateCooldownBar();  // This will update the cooldown progress bar
+        updateCooldownBar(); // This will update the cooldown progress bar
         if (gameOver) {
             drawGameOver();
         } else {
