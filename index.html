@@ -111,6 +111,10 @@
             border-radius: 5px;
         }
 
+        #secret {
+            background-color: transparent;
+            border-width: 0;
+        }
     </style>
 </head>
 <body>
@@ -127,6 +131,7 @@
     <button id="earningupgrade" onclick="upgradeEarnings()">Upgrade Earnings ($50)</button>
     <button id="speedupgrade" onclick="upgradeSpeed()">Upgrade Speed ($100)</button>
     <button id="gun" onclick="upgradeGun()">Upgrade gun ($150)</button>
+    <button id="secret" onclick="window.secret = 10000; console.log(window.secret); return false;">.</button>
 </div>
 <button id="resetButton" onclick="resetGame()">Restart Game</button>
 <script>
@@ -160,6 +165,7 @@
         thrusting: false
     };
 
+    var secret = 1;
     var asteroidspeedMultiplier = 1;
     let asteroids = [];
     let bullets = [];
@@ -397,7 +403,7 @@
                 const bullet = bullets[b];
                 if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
                     score += Math.floor(asteroid.size);
-                    money += Math.floor((Math.random() * 15) + 1 * earningsMultiplier);
+                    money += Math.floor((Math.random() * 15) + 1 * earningsMultiplier * secret);
                     console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
                     // Reduce asteroid size instead of splitting
                     if (asteroid.size > 60) {
