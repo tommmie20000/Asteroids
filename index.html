@@ -614,6 +614,7 @@
             gun.textContent = `Max level reached!`;
             console.log("Gun already at max upgrade");
             gunelement.style.border = '2px solid gray';
+            bulletCooldown = 50;
         }
         if (money < upgradeGuncost) {
             gun.textContent = `Not enough money! ($${upgradeGuncost})`;
@@ -634,7 +635,7 @@
     }
 
     // Set an interval to call the increaseSpeed function every 60 seconds (60000 milliseconds)
-    setInterval(increaseSpeed, 60000);
+    setInterval(increaseSpeed, 5000);
 
     window.onload = function() {
         document.getElementById("turningSpeedSlider").addEventListener("input", function() {
