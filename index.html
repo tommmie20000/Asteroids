@@ -178,6 +178,8 @@
     const asteroidRespawnRate = 2; // Number of asteroids to spawn when needed
     var minAsteroidCount = 10; // Minimum number of asteroids to maintain
     let moneyDrops = []; // Array to store money drops
+    let shieldDrops = []; // Array to store shield drops
+    let shieldActive = false;
 
     // Handle key events
     window.addEventListener("keydown", (e) => {
@@ -377,6 +379,31 @@
         }
     }
 
+    class ShieldDrop {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.radius = 15;
+            this.color = "blue";
+            this.collected = false;
+        }
+
+        draw() {
+            if (!this.collected) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        isCollected(ship) {
+            const dx = this.x - ship.x;
+            const dy = this.y - ship.y;
+            return Math.hypot(dx, dy) < ship.radius + this.radius;
+        }
+    }
+
     // Spawn an asteroid at a random edge location
     function spawnAsteroid() {
         let edge = Math.floor(Math.random() * 4);
@@ -435,8 +462,13 @@
                 console.log(`Score: ${score}, Money: $${money}, Earnings Multiplier: ${earningsMultiplier}`);
 
                 if (asteroid.isGolden) {
+                    const dropChance = Math.random();
+                    if (dropChance < 0.5) {
+                        moneyDrops.push(new MoneyDrop(asteroid.x, asteroid.y)); // 50% chance for money
+                    } else {
+                        shieldDrops.push(new ShieldDrop(asteroid.x, asteroid.y)); // 50% chance for shield
+                    }
                     if (!asteroid.exploded) {
-                        moneyDrops.push(new MoneyDrop(asteroid.x, asteroid.y)); // Spawn money drop
                         asteroid.exploded = true; // Mark as exploded
                         asteroids.splice(a, 1); // Remove the golden asteroid
                     }
@@ -446,6 +478,14 @@
                         asteroid.radius = asteroid.size / 2;
                         asteroid.vertices = asteroid.generateVertices(); // Update vertices!
                     } else {
+                        if (asteroid.isGolden) { // Only allow drops for golden asteroids
+                            const dropChance = Math.random();
+                            if (dropChance < 0.5) {
+                                moneyDrops.push(new MoneyDrop(asteroid.x, asteroid.y)); // 50% chance for money
+                            } else {
+                                shieldDrops.push(new ShieldDrop(asteroid.x, asteroid.y)); // 50% chance for shield
+                            }
+                        }
                         asteroids.splice(a, 1);
                     }
                 }
@@ -456,9 +496,15 @@
 
         // Check collision between the ship and asteroids
         if (isPointInPolygon(ship.x, ship.y, asteroidPolygon)) {
-            console.log("Ship collided with an asteroid!");
-            gameOver = true; // Trigger game over state
-            return; // Exit the function to stop further checks
+            if (shieldActive) {
+                console.log("Shield absorbed the collision!");
+                shieldActive = false; // Deactivate shield
+                asteroids.splice(a, 1); // Destroy the asteroid
+            } else {
+                console.log("Ship collided with an asteroid!");
+                gameOver = true; // Trigger game over state
+                return; // Exit the function to stop further checks
+            }
         }
     }
 
@@ -472,33 +518,55 @@
         }
     }
 
+    // Check if the ship collects shield drops
+    for (let i = shieldDrops.length - 1; i >= 0; i--) {
+        const drop = shieldDrops[i];
+        if (drop.isCollected(ship)) {
+            shieldActive = true; // Activate shield
+            console.log("Shield activated!");
+            shieldDrops.splice(i, 1); // Remove the collected drop
+        }
+    }
+
     scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
 }
 
     // Draw the ship (same as before)
     function drawShip() {
-        ctx.save();
-        ctx.translate(ship.x, ship.y);
-        ctx.rotate(ship.angle);
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.rotate(ship.angle);
+
+    // Draw the shield if active
+    if (shieldActive) {
         ctx.beginPath();
-        ctx.moveTo(ship.radius, 0);
-        ctx.lineTo(-ship.radius, ship.radius / 2);
-        ctx.lineTo(-ship.radius, -ship.radius / 2);
-        ctx.closePath();
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
+        ctx.arc(0, 0, ship.radius + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 3;
         ctx.stroke();
-        // Draw thrust flame if thrusting
-        if (ship.thrusting) {
-            ctx.beginPath();
-            ctx.moveTo(-ship.radius, ship.radius / 3);
-            ctx.lineTo(-ship.radius - 10, 0);
-            ctx.lineTo(-ship.radius, -ship.radius / 3);
-            ctx.strokeStyle = "orange";
-            ctx.stroke();
-        }
-        ctx.restore();
     }
+
+    // Draw the ship
+    ctx.beginPath();
+    ctx.moveTo(ship.radius, 0);
+    ctx.lineTo(-ship.radius, ship.radius / 2);
+    ctx.lineTo(-ship.radius, -ship.radius / 2);
+    ctx.closePath();
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw thrust flame if thrusting
+    if (ship.thrusting) {
+        ctx.beginPath();
+        ctx.moveTo(-ship.radius, ship.radius / 3);
+        ctx.lineTo(-ship.radius - 10, 0);
+        ctx.lineTo(-ship.radius, -ship.radius / 3);
+        ctx.strokeStyle = "orange";
+        ctx.stroke();
+    }
+    ctx.restore();
+}
 
     // Draw game over screen
     function drawGameOver() {
@@ -559,6 +627,9 @@
 
         // Draw and update money drops
         moneyDrops.forEach(drop => drop.draw());
+
+        // Draw and update shield drops
+        shieldDrops.forEach(drop => drop.draw());
 
         checkCollisions();
         drawShip();
