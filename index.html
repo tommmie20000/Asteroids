@@ -368,11 +368,18 @@
 
         draw() {
             if (!this.collected) {
+                let timeLeft = 20 - Math.floor((Date.now() - this.spawnTime) / 1000);
+                timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
+
+                if (timeLeft === 0) {
+                    this.collected = true; // Mark as collected to despawn
+                    return;
+                }
+
                 ctx.fillStyle = this.color;
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
                 // Draw countdown timer
-                const timeLeft = 30 - Math.floor((Date.now() - this.spawnTime) / 1000);
                 ctx.fillStyle = "white";
                 ctx.font = "12px sans-serif";
                 ctx.textAlign = "center";
@@ -399,13 +406,20 @@
 
         draw() {
             if (!this.collected) {
+                let timeLeft = 30 - Math.floor((Date.now() - this.spawnTime) / 1000);
+                timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
+
+                if (timeLeft === 0) {
+                    this.collected = true; // Mark as collected to despawn
+                    return;
+                }
+
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
                 ctx.fill();
 
                 // Draw countdown timer
-                const timeLeft = 30 - Math.floor((Date.now() - this.spawnTime) / 1000);
                 ctx.fillStyle = "white";
                 ctx.font = "12px sans-serif";
                 ctx.textAlign = "center";
@@ -425,7 +439,7 @@
         let edge = Math.floor(Math.random() * 4);
         let x, y;
         const size = Math.random() * 100 + 30; // Size range: 30 to 130
-        const isGolden = Math.random() < 0.05; // 5% chance to spawn a golden asteroid
+        const isGolden = Math.random() < 0.02; // 5% chance to spawn a golden asteroid
         if (edge === 0) {
             x = 0;
             y = Math.random() * canvas.height;
