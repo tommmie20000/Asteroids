@@ -363,12 +363,20 @@
             this.height = 10;
             this.color = "green";
             this.collected = false;
+            this.spawnTime = Date.now(); // Track spawn time
         }
 
         draw() {
             if (!this.collected) {
                 ctx.fillStyle = this.color;
                 ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                // Draw countdown timer
+                const timeLeft = 30 - Math.floor((Date.now() - this.spawnTime) / 1000);
+                ctx.fillStyle = "white";
+                ctx.font = "12px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(`${timeLeft}s`, this.x + this.width / 2, this.y - 5);
             }
         }
 
@@ -386,6 +394,7 @@
             this.radius = 15;
             this.color = "blue";
             this.collected = false;
+            this.spawnTime = Date.now(); // Track spawn time
         }
 
         draw() {
@@ -394,6 +403,13 @@
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
                 ctx.fill();
+
+                // Draw countdown timer
+                const timeLeft = 30 - Math.floor((Date.now() - this.spawnTime) / 1000);
+                ctx.fillStyle = "white";
+                ctx.font = "12px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(`${timeLeft}s`, this.x, this.y - this.radius - 5);
             }
         }
 
