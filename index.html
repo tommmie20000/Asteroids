@@ -409,7 +409,7 @@
         let edge = Math.floor(Math.random() * 4);
         let x, y;
         const size = Math.random() * 100 + 30; // Size range: 30 to 130
-        const isGolden = Math.random() < 0.1; // 10% chance to spawn a golden asteroid
+        const isGolden = Math.random() < 0.05; // 5% chance to spawn a golden asteroid
         if (edge === 0) {
             x = 0;
             y = Math.random() * canvas.height;
@@ -581,6 +581,9 @@
 
     // Reset the game state
     function resetGame() {
+        moneyDrops = []; // Array to store money drops
+        shieldDrops = []; // Array to store shield drops
+        shieldActive = false;
         gameOver = false;
         score = 0;
         asteroids = [];
