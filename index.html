@@ -114,6 +114,8 @@
         #secret {
             background-color: transparent;
             border-width: 0;
+            width: 20px;
+            cursor: pointer
         }
     </style>
 </head>
@@ -125,13 +127,13 @@
 <div id="sliderContainer">
     <label for="turningSpeedSlider">Turning Speed:</label>
     <input type="range" id="turningSpeedSlider" min="0.005" max="0.1" step="0.005" value="0.02" tabindex="-1" style="outline: none;">
+    <button id="secret" onclick="window.secret = 10000; console.log(window.secret); return false;">.</button>
 </div>
 <canvas id="gameCanvas"></canvas>
 <div id="upgradeMenu">
     <button id="earningupgrade" onclick="upgradeEarnings()">Upgrade Earnings ($50)</button>
     <button id="speedupgrade" onclick="upgradeSpeed()">Upgrade Speed ($100)</button>
     <button id="gun" onclick="upgradeGun()">Upgrade gun ($150)</button>
-    <button id="secret" onclick="window.secret = 10000; console.log(window.secret); return false;">.</button>
 </div>
 <button id="resetButton" onclick="resetGame()">Restart Game</button>
 <script>
@@ -368,22 +370,22 @@
 
         draw() {
             if (!this.collected) {
-                let timeLeft = 20 - Math.floor((Date.now() - this.spawnTime) / 1000);
-                timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
+            let timeLeft = (20 - (Date.now() - this.spawnTime) / 1000).toFixed(1);
+            timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
 
-                if (timeLeft === 0) {
-                    this.collected = true; // Mark as collected to despawn
-                    return;
-                }
+            if (timeLeft === "0.0") {
+                this.collected = true; // Mark as collected to despawn
+                return;
+            }
 
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
 
-                // Draw countdown timer
-                ctx.fillStyle = "white";
-                ctx.font = "12px sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(`${timeLeft}s`, this.x + this.width / 2, this.y - 5);
+            // Draw countdown timer
+            ctx.fillStyle = "white";
+            ctx.font = "12px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`${timeLeft}s`, this.x + this.width / 2, this.y - 5);
             }
         }
 
