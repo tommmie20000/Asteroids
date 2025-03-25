@@ -117,6 +117,25 @@
             width: 20px;
             cursor: pointer
         }
+
+        /* Add styles for the two-player toggle button */
+        #twoPlayerToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            font-size: 16px;
+            background-color: rgb(71, 71, 71);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #twoPlayerToggle:hover {
+            background-color: rgb(102, 102, 102);
+        }
     </style>
 </head>
 <body>
@@ -136,6 +155,7 @@
     <button id="gun" onclick="upgradeGun()">Upgrade gun ($150)</button>
 </div>
 <button id="resetButton" onclick="resetGame()">Restart Game</button>
+<button id="twoPlayerToggle">Enable Two-Player Mode</button>
 <script>
     document.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", () => btn.blur());
@@ -167,13 +187,29 @@
         thrusting: false
     };
 
+    // Add Player 2's ship
+    let ship2 = {
+        x: canvas.width / 3,
+        y: canvas.height / 3,
+        angle: -Math.PI / 2,
+        velocity: { x: 0, y: 0 },
+        radius: 15,
+        turningSpeed: 0.02,
+        acceleration: 0.02,
+        friction: 0.99,
+        thrusting: false
+    };
+
     var secret = 1;
     var asteroidspeedMultiplier = 1;
     let asteroids = [];
     let bullets = [];
     let keys = {left: false, right: false, up: false, space: false};
+    let keys2 = { left: false, right: false, up: false, space: false };
     let score = 0;
+    let score2 = 0;
     let lastShotTime = 0;
+    let lastShotTime2 = 0; // Separate cooldown for Player 2
     const maxBulletDistance = 5000; // Remove bullet if far from its start
     let gameOver = false;
     const initialAsteroidCount = 10; // How many asteroids to start with
@@ -182,37 +218,61 @@
     let moneyDrops = []; // Array to store money drops
     let shieldDrops = []; // Array to store shield drops
     let shieldActive = false;
+    let isTwoPlayerMode = false; // Flag to track two-player mode
 
-    // Handle key events
-    window.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowLeft") keys.left = true;
-        if (e.key === "ArrowRight") keys.right = true;
-        if (e.key === "ArrowUp") keys.up = true;
-        if (e.key === " ") keys.space = true;
-        if (e.key === "r" && gameOver) resetGame();
-        if (e.key === "R" && gameOver) resetGame();
-        if (e.key === "w") keys.up = true;
-        if (e.key === "a") keys.left = true;
-        if(e.key === "s") keys.down = true;
-        if (e.key === "d") keys.right = true;
-        if (e.key === "W") keys.up = true;
-        if (e.key === "A") keys.left = true;
-        if(e.key === "S") keys.down = true;
-        if (e.key === "D") keys.right = true;
+    // Add event listener for the two-player toggle button
+    const twoPlayerToggle = document.getElementById("twoPlayerToggle");
+    twoPlayerToggle.addEventListener("click", () => {
+        isTwoPlayerMode = !isTwoPlayerMode;
+        twoPlayerToggle.textContent = isTwoPlayerMode ? "Disable Two-Player Mode" : "Enable Two-Player Mode";
+        console.log(`Two-Player Mode: ${isTwoPlayerMode}`);
     });
+
+    // Update key event listeners for simultaneous input
+    window.addEventListener("keydown", (e) => {
+        switch (e.key) {
+            // Player 1 controls
+            case "ArrowLeft": keys.left = true; break;
+            case "ArrowRight": keys.right = true; break;
+            case "ArrowUp": keys.up = true; break;
+            case " ": keys.space = true; break;
+            case "w": keys.up = true; break;
+            case "a": keys.left = true; break;
+            case "s": keys.down = true; break;
+            case "d": keys.right = true; break;
+
+            // Player 2 controls
+            case "j": keys2.left = true; break;
+            case "l": keys2.right = true; break;
+            case "i": keys2.up = true; break;
+            case "k": keys2.space = true; break;
+
+            // Reset game
+            case "r":
+            case "R":
+                if (gameOver) resetGame();
+                break;
+        }
+    });
+
     window.addEventListener("keyup", (e) => {
-        if (e.key === "ArrowLeft") keys.left = false;
-        if (e.key === "ArrowRight") keys.right = false;
-        if (e.key === "ArrowUp") keys.up = false;
-        if (e.key === " ") keys.space = false;
-        if (e.key === "w") keys.up = false;
-        if (e.key === "a") keys.left = false;
-        if(e.key === "s") keys.down = false;
-        if (e.key === "d") keys.right = false;
-        if (e.key === "W") keys.up = false;
-        if (e.key === "A") keys.left = false;
-        if(e.key === "S") keys.down = false;
-        if (e.key === "D") keys.right = false;
+        switch (e.key) {
+            // Player 1 controls
+            case "ArrowLeft": keys.left = false; break;
+            case "ArrowRight": keys.right = false; break;
+            case "ArrowUp": keys.up = false; break;
+            case " ": keys.space = false; break;
+            case "w": keys.up = false; break;
+            case "a": keys.left = false; break;
+            case "s": keys.down = false; break;
+            case "d": keys.right = false; break;
+
+            // Player 2 controls
+            case "j": keys2.left = false; break;
+            case "l": keys2.right = false; break;
+            case "i": keys2.up = false; break;
+            case "k": keys2.space = false; break;
+        }
     });
 
     // Ship movement
@@ -243,6 +303,32 @@
         if (ship.x > canvas.width) ship.x = 0;
         if (ship.y < 0) ship.y = canvas.height;
         if (ship.y > canvas.height) ship.y = 0;
+    }
+
+    // Update Player 2's movement
+    function moveShip2() {
+        if (!isTwoPlayerMode) return; // Skip if two-player mode is disabled
+        if (keys2.left) ship2.angle -= ship2.turningSpeed;
+        if (keys2.right) ship2.angle += ship2.turningSpeed;
+
+        if (keys2.up) {
+            ship2.thrusting = true;
+            ship2.velocity.x += Math.cos(ship2.angle) * ship2.acceleration;
+            ship2.velocity.y += Math.sin(ship2.angle) * ship2.acceleration;
+        } else {
+            ship2.thrusting = false;
+        }
+
+        ship2.velocity.x *= ship2.friction;
+        ship2.velocity.y *= ship2.friction;
+
+        ship2.x += ship2.velocity.x;
+        ship2.y += ship2.velocity.y;
+
+        if (ship2.x < 0) ship2.x = canvas.width;
+        if (ship2.x > canvas.width) ship2.x = 0;
+        if (ship2.y < 0) ship2.y = canvas.height;
+        if (ship2.y > canvas.height) ship2.y = 0;
     }
 
     // Bullet class
@@ -476,6 +562,15 @@
         }
     }
 
+    function fireBullet2() {
+        if (!isTwoPlayerMode) return; // Skip if two-player mode is disabled
+        const now = Date.now();
+        if (now - lastShotTime2 > bulletCooldown) {
+            bullets.push(new Bullet(ship2.x, ship2.y, ship2.angle));
+            lastShotTime2 = now;
+        }
+    }
+
    // Check collisions for bullets with asteroids and ship with asteroids
     function checkCollisions() {
     for (let a = asteroids.length - 1; a >= 0; a--) {
@@ -563,6 +658,67 @@
     scoreDisplay.textContent = `Score: ${score} | Money: $${money}`;
 }
 
+    // Check collisions for Player 2
+    function checkCollisionsForPlayer2() {
+        for (let a = asteroids.length - 1; a >= 0; a--) {
+            const asteroid = asteroids[a];
+            const asteroidPolygon = asteroid.vertices.map(v => ({
+                x: asteroid.x + v.x,
+                y: asteroid.y + v.y
+            }));
+
+            // Check collision between Player 2's bullets and asteroids
+            for (let b = bullets.length - 1; b >= 0; b--) {
+                const bullet = bullets[b];
+                if (isPointInPolygon(bullet.x, bullet.y, asteroidPolygon)) {
+                    score2 += Math.floor(asteroid.size);
+                    bullets.splice(b, 1);
+                    if (asteroid.size > 60) {
+                        asteroid.size *= 0.6;
+                        asteroid.radius = asteroid.size / 2;
+                        asteroid.vertices = asteroid.generateVertices();
+                    } else {
+                        asteroids.splice(a, 1);
+                    }
+                    break;
+                }
+            }
+
+            // Check collision between Player 2's ship and asteroids
+            if (isPointInPolygon(ship2.x, ship2.y, asteroidPolygon)) {
+                if (ship2.shieldActive) {
+                    console.log("Player 2's shield absorbed the collision!");
+                    ship2.shieldActive = false; // Deactivate shield after absorbing the collision
+                    asteroids.splice(a, 1); // Destroy the asteroid
+                } else {
+                    console.log("Player 2 collided with an asteroid!");
+                    gameOver = true; // Trigger game over state
+                    return;
+                }
+            }
+        }
+
+        // Check if Player 2 collects money drops
+        for (let i = moneyDrops.length - 1; i >= 0; i--) {
+            const drop = moneyDrops[i];
+            if (drop.isCollected(ship2)) {
+                console.log("Player 2 collected money!");
+                money += Math.round(Math.random() * 100 + 100); // Add money to the shared pool
+                moneyDrops.splice(i, 1); // Remove the collected drop
+            }
+        }
+
+        // Check if Player 2 collects shield drops
+        for (let i = shieldDrops.length - 1; i >= 0; i--) {
+            const drop = shieldDrops[i];
+            if (drop.isCollected(ship2)) {
+                console.log("Player 2 activated a shield!");
+                ship2.shieldActive = true; // Activate shield for Player 2
+                shieldDrops.splice(i, 1); // Remove the collected drop
+            }
+        }
+    }
+
     // Draw the ship (same as before)
     function drawShip() {
     ctx.save();
@@ -600,6 +756,41 @@
     ctx.restore();
 }
 
+    // Draw Player 2's ship
+    function drawShip2() {
+        ctx.save();
+        ctx.translate(ship2.x, ship2.y);
+        ctx.rotate(ship2.angle);
+
+        // Draw the shield if active for Player 2
+        if (ship2.shieldActive) {
+            ctx.beginPath();
+            ctx.arc(0, 0, ship2.radius + 15, 0, Math.PI * 2);
+            ctx.strokeStyle = "cyan";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(ship2.radius, 0);
+        ctx.lineTo(-ship2.radius, ship2.radius / 2);
+        ctx.lineTo(-ship2.radius, -ship2.radius / 2);
+        ctx.closePath();
+        ctx.strokeStyle = "yellow";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (ship2.thrusting) {
+            ctx.beginPath();
+            ctx.moveTo(-ship2.radius, ship2.radius / 3);
+            ctx.lineTo(-ship2.radius - 10, 0);
+            ctx.lineTo(-ship2.radius, -ship2.radius / 3);
+            ctx.strokeStyle = "orange";
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     // Draw game over screen
     function drawGameOver() {
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
@@ -618,6 +809,7 @@
         shieldActive = false;
         gameOver = false;
         score = 0;
+        score2 = 0;
         asteroids = [];
         bullets = [];
         money = 0;
@@ -632,6 +824,9 @@
         ship.x = canvas.width / 2;
         ship.y = canvas.height / 2;
         ship.velocity = {x: 0, y: 0};
+        ship2.x = canvas.width / 3;
+        ship2.y = canvas.height / 2;
+        ship2.velocity = {x: 0, y: 0};
         resetButton.style.display = "none";
         for (let i = 0; i < initialAsteroidCount; i++) {
             spawnAsteroid();
@@ -643,7 +838,9 @@
     function update() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         moveShip();
+        if (isTwoPlayerMode) moveShip2(); // Only move Player 2 if two-player mode is enabled
         if (keys.space) fireBullet();
+        if (keys2.space && isTwoPlayerMode) fireBullet2(); // Only allow Player 2 to shoot in two-player mode
 
         // Update and draw bullets
         for (let i = bullets.length - 1; i >= 0; i--) {
@@ -667,7 +864,9 @@
         shieldDrops.forEach(drop => drop.draw());
 
         checkCollisions();
+        if (isTwoPlayerMode) checkCollisionsForPlayer2(); // Only check collisions for Player 2 if two-player mode is enabled
         drawShip();
+        if (isTwoPlayerMode) drawShip2(); // Only draw Player 2 if two-player mode is enabled
         respawnAsteroids();
         updateCooldownBar(); // This will update the cooldown progress bar
         if (gameOver) {
