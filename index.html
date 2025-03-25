@@ -184,7 +184,8 @@
         turningSpeed: 0.02,
         acceleration: 0.02,
         friction: 0.99,
-        thrusting: false
+        thrusting: false,
+        shieldCount: 0, // Track active shields
     };
 
     // Add Player 2's ship
@@ -197,7 +198,8 @@
         turningSpeed: 0.02,
         acceleration: 0.02,
         friction: 0.99,
-        thrusting: false
+        thrusting: false,
+        shieldCount: 0, // Track active shields
     };
 
     var secret = 1;
@@ -450,22 +452,22 @@
 
         draw() {
             if (!this.collected) {
-            let timeLeft = (20 - (Date.now() - this.spawnTime) / 1000).toFixed(1);
-            timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
+                let timeLeft = (20 - (Date.now() - this.spawnTime) / 1000).toFixed(1);
+                timeLeft = Math.max(0, timeLeft); // Ensure timer does not go negative
 
-            if (timeLeft === "0.0") {
-                this.collected = true; // Mark as collected to despawn
-                return;
-            }
+                if (timeLeft === 0) {
+                    this.collected = true; // Mark as collected to despawn
+                    return; // Stop drawing the money drop
+                }
 
-            ctx.fillStyle = this.color;
-            ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
 
-            // Draw countdown timer
-            ctx.fillStyle = "white";
-            ctx.font = "12px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(`${timeLeft}s`, this.x + this.width / 2, this.y - 5);
+                // Draw countdown timer
+                ctx.fillStyle = "white";
+                ctx.font = "12px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(`${timeLeft}s`, this.x + this.width / 2, this.y - 5);
             }
         }
 
@@ -512,7 +514,11 @@
         isCollected(ship) {
             const dx = this.x - ship.x;
             const dy = this.y - ship.y;
-            return Math.hypot(dx, dy) < ship.radius + this.radius;
+            if (Math.hypot(dx, dy) < ship.radius + this.radius && ship.shieldCount < 3) {
+                ship.shieldCount++; // Increment shield count up to 3
+                return true;
+            }
+            return false;
         }
     }
 
@@ -521,7 +527,7 @@
         let edge = Math.floor(Math.random() * 4);
         let x, y;
         const size = Math.random() * 100 + 30; // Size range: 30 to 130
-        const isGolden = Math.random() < 0.02; // 5% chance to spawn a golden asteroid
+        const isGolden = Math.random() < 0.025; // 2.5% chance to spawn a golden asteroid
         if (edge === 0) {
             x = 0;
             y = Math.random() * canvas.height;
@@ -617,9 +623,9 @@
 
         // Check collision between the ship and asteroids
         if (isPointInPolygon(ship.x, ship.y, asteroidPolygon)) {
-            if (shieldActive) {
+            if (ship.shieldCount > 0) {
                 console.log("Shield absorbed the collision!");
-                shieldActive = false; // Deactivate shield
+                ship.shieldCount--; // Decrement shield count
                 asteroids.splice(a, 1); // Destroy the asteroid
             } else {
                 console.log("Ship collided with an asteroid!");
@@ -680,9 +686,9 @@
 
             // Check collision between Player 2's ship and asteroids
             if (isPointInPolygon(ship2.x, ship2.y, asteroidPolygon)) {
-                if (ship2.shieldActive) {
+                if (ship2.shieldCount > 0) {
                     console.log("Player 2's shield absorbed the collision!");
-                    ship2.shieldActive = false; // Deactivate shield after absorbing the collision
+                    ship2.shieldCount--; // Decrement shield count
                     asteroids.splice(a, 1); // Destroy the asteroid
                 } else {
                     console.log("Player 2 collided with an asteroid!");
@@ -719,11 +725,11 @@
     ctx.translate(ship.x, ship.y);
     ctx.rotate(ship.angle);
 
-    // Draw the shield if active
-    if (shieldActive) {
+    // Draw shield rings
+    for (let i = 0; i < ship.shieldCount; i++) {
         ctx.beginPath();
-        ctx.arc(0, 0, ship.radius + 15, 0, Math.PI * 2);
-        ctx.strokeStyle = "cyan";
+        ctx.arc(0, 0, ship.radius + 15 + i * 10, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 255, 255, ${1 - i * 0.3})`; // Fading effect
         ctx.lineWidth = 3;
         ctx.stroke();
     }
@@ -756,11 +762,11 @@
         ctx.translate(ship2.x, ship2.y);
         ctx.rotate(ship2.angle);
 
-        // Draw the shield if active for Player 2
-        if (ship2.shieldActive) {
+        // Draw shield rings
+        for (let i = 0; i < ship2.shieldCount; i++) {
             ctx.beginPath();
-            ctx.arc(0, 0, ship2.radius + 15, 0, Math.PI * 2);
-            ctx.strokeStyle = "cyan";
+            ctx.arc(0, 0, ship2.radius + 15 + i * 10, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${1 - i * 0.3})`; // Fading effect
             ctx.lineWidth = 3;
             ctx.stroke();
         }
@@ -818,9 +824,11 @@
         ship.x = canvas.width / 2;
         ship.y = canvas.height / 2;
         ship.velocity = {x: 0, y: 0};
+        ship.shieldCount = 0;
         ship2.x = canvas.width / 3;
         ship2.y = canvas.height / 2;
         ship2.velocity = {x: 0, y: 0};
+        ship2.shieldCount = 0;
         resetButton.style.display = "none";
         for (let i = 0; i < initialAsteroidCount; i++) {
             spawnAsteroid();
