@@ -228,24 +228,21 @@
         console.log(`Two-Player Mode: ${isTwoPlayerMode}`);
     });
 
-    // Update key event listeners for simultaneous input
+    // Update key event listeners for Player 1 (WASD) and Player 2 (Arrow keys)
     window.addEventListener("keydown", (e) => {
         switch (e.key) {
-            // Player 1 controls
-            case "ArrowLeft": keys.left = true; break;
-            case "ArrowRight": keys.right = true; break;
-            case "ArrowUp": keys.up = true; break;
-            case " ": keys.space = true; break;
+            // Player 1 controls (WASD)
             case "w": keys.up = true; break;
             case "a": keys.left = true; break;
             case "s": keys.down = true; break;
             case "d": keys.right = true; break;
+            case " ": keys.space = true; break;
 
-            // Player 2 controls
-            case "j": keys2.left = true; break;
-            case "l": keys2.right = true; break;
-            case "i": keys2.up = true; break;
-            case "k": keys2.space = true; break;
+            // Player 2 controls (Arrow keys)
+            case "ArrowUp": keys2.up = true; break;
+            case "ArrowLeft": keys2.left = true; break;
+            case "ArrowRight": keys2.right = true; break;
+            case "ArrowDown": keys2.space = true; break; // Map ArrowDown to shooting
 
             // Reset game
             case "r":
@@ -257,21 +254,18 @@
 
     window.addEventListener("keyup", (e) => {
         switch (e.key) {
-            // Player 1 controls
-            case "ArrowLeft": keys.left = false; break;
-            case "ArrowRight": keys.right = false; break;
-            case "ArrowUp": keys.up = false; break;
-            case " ": keys.space = false; break;
+            // Player 1 controls (WASD)
             case "w": keys.up = false; break;
             case "a": keys.left = false; break;
             case "s": keys.down = false; break;
             case "d": keys.right = false; break;
+            case " ": keys.space = false; break;
 
-            // Player 2 controls
-            case "j": keys2.left = false; break;
-            case "l": keys2.right = false; break;
-            case "i": keys2.up = false; break;
-            case "k": keys2.space = false; break;
+            // Player 2 controls (Arrow keys)
+            case "ArrowUp": keys2.up = false; break;
+            case "ArrowLeft": keys2.left = false; break;
+            case "ArrowRight": keys2.right = false; break;
+            case "ArrowDown": keys2.space = false; break; // Map ArrowDown to shooting
         }
     });
 
