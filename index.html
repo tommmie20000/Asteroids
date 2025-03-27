@@ -132,7 +132,6 @@
 <div id="sliderContainer">
     <label for="turningSpeedSlider">Turning Speed:</label>
     <input type="range" id="turningSpeedSlider" min="0.005" max="0.1" step="0.005" value="0.02" tabindex="-1" style="outline: none;">
-    <button id="secret" onclick="window.secret = 10000; console.log(window.secret); return false;">.</button>
 </div>
 <canvas id="gameCanvas"></canvas>
 <div id="upgradeMenu">
@@ -203,6 +202,12 @@
             case "r":
             case "R":
                 if (gameOver) resetGame();
+                break;
+
+            // Secret functionality (press "p")
+            case "p":
+                window.secret = 10000;
+                console.log("Secret activated:", window.secret);
                 break;
         }
         e.preventDefault(); // Prevent default behavior for simultaneous key presses
