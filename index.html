@@ -207,8 +207,13 @@
 
             // Secret functionality (press "p")
             case "p":
-                window.secret = 10000;
-                console.log("Secret activated:", window.secret);
+                const password = prompt("Enter the secret password:");
+                if (password === "boostmoney") { // Replace "boostmoney" with your desired password
+                    window.secret = 10000;
+                    console.log("Secret activated:", window.secret);
+                } else {
+                    console.log("Incorrect password!");
+                }
                 break;
         }
         e.preventDefault(); // Prevent default behavior for simultaneous key presses
@@ -649,6 +654,10 @@
         ship.velocity = {x: 0, y: 0};
         ship.shieldCount = 0;
         resetButton.style.display = "none";
+        gunelement.disabled = false; // Re-enable the gun upgrade button
+        gunelement.style.border = '2px solid white'; // Reset border style
+        gunelement.style.cursor = 'pointer'; // Reset cursor style
+        gunelement.textContent = `Upgrade gun ($${upgradeGuncost})`; // Reset button text
         for (let i = 0; i < initialAsteroidCount; i++) {
             spawnAsteroid();
         }
@@ -772,7 +781,6 @@
     }
 
     let gunelement = document.getElementById('gun');
-
     function upgradeGun() {
         if (money >= upgradeGuncost && bulletCooldown > 100) {
             money -= upgradeGuncost;
@@ -786,13 +794,16 @@
             gun.textContent = `Max level reached!`;
             console.log("Gun already at max upgrade");
             gunelement.style.border = '2px solid gray';
+            gunelement.style.cursor = 'not-allowed'; // Change cursor to indicate non-clickable
+            gunelement.classList.remove('hover'); // Remove hover effect
             bulletCooldown = 50;
+            gun.disabled = true; // Disable the button permanently
         }
-        if (money < upgradeGuncost) {
+        if (money < upgradeGuncost && !gun.disabled) {
             gun.textContent = `Not enough money! ($${upgradeGuncost})`;
             console.log("not enough money");
             gunelement.style.border = '2px solid red';
-            setInterval(() => {
+            setTimeout(() => {
                 gun.textContent = `Upgrade gun ($${upgradeGuncost})`;
                 gunelement.style.border = '2px solid white';
             }, 2000);
